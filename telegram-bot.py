@@ -203,7 +203,7 @@ async def sueno_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         horas = float(context.args[0])
         xp_ganado = 0
         
-        if 2 <= horas <= 16: # Rango de horas razonable
+        if 2 <= horas <= 30: # Rango de horas razonable
             if 7 <= horas <= 9: 
                 xp_ganado = 150 # XP extra por sueño adecuado
                 mensaje_extra = "¡Felicidades! por un descanso óptimo."
@@ -214,7 +214,7 @@ async def sueno_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             elif 10 <= horas <= 20:
                 xp_ganado = 10
                 mensaje_extra = "Gracias por registrarlo. OJO! Recuerda que un descanso óptimo está entre 7 y 9 horas."
-                
+
             resultado = _registrar_actividad_api(update.effective_user.id, "sueno", xp_ganado)
             
             if resultado["success"]: 
@@ -223,7 +223,7 @@ async def sueno_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                  await update.message.reply_text(f"❌ Error al registrar en el backend. {mensaje_extra}")
 
         else:
-             await update.message.reply_text("Por favor, El mínimo de horas para ingresar es 2.")
+             await update.message.reply_text("Por favor, El rango ")
 
     except ValueError:
         await update.message.reply_text("Formato inválido. Por favor, usa un número.")
