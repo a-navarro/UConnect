@@ -1,6 +1,7 @@
 import logging
 import os 
 from parametros import API_URL, TOKEN_TELEGRAM
+from backend.API_KEY import GEMINI_KEY
 import requests # Necesario para las llamadas a la API de tu backend
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -117,7 +118,7 @@ async def ranking_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     else:
         # Formatear el ranking_data (asumimos que es una lista de objetos con 'nombre' y 'xp')
         ranking_list = [
-            f"{i+1}. {p['nombre']} - {p['xp']} XP" + (" 👑" if i == 0 else "")
+            f"{i+1}. {p['nombre']} - {p.get('xp_semanal', 0)} XP" + (" 👑" if i == 0 else "")
             for i, p in enumerate(ranking_data[:10])
         ]
         
@@ -265,7 +266,6 @@ async def ia_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     texto_usuario = update.message.text
     
     # OBTENER LA CLAVE DE GEMINI DESDE LAS VARIABLES DE ENTORNO
-    GEMINI_KEY = os.getenv("GEMINI_API_KEY") 
     
     if not GEMINI_KEY:
         logger.error("La clave de Gemini (GEMINI_API_KEY) no está configurada en las variables de entorno.")

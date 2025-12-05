@@ -1,2 +1,2 @@
 TOKEN_TELEGRAM = "8250438025:AAFA2IUTLhseiPwo_6wWTJ-lkHqf54pcBKA"
-API_URL = "http://localhost:5000"
+API_URL = "http://localhost:5000/api"
