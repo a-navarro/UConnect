@@ -237,7 +237,8 @@ async def misiones_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         "**Diarias:**\n"
         "• **Concentración:** Registra 2 bloques de estudio de 45 min. (Recompensa: +300 XP)\n\n"
         "**Semanales:**\n"
-        "• **Perfect Attendance:** Asiste a 5 clases distintas. (Recompensa: +1000 XP y un pin virtual)"
+        "• **Perfect Attendance:** Asiste a 5 clases distintas. (Recompensa: +1000 XP)\n"
+        "• **Vida Activa:** Realiza algun deporte en la semana. (Recompensa: +750 XP)"
     )
     await update.message.reply_text(misiones_msg, parse_mode="Markdown")
 
