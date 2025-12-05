@@ -33,6 +33,9 @@ def guardar_dataframes(df_u, df_r):
 
 # --- ENDPOINTS DE LA API ---
 
+@app.route('/', methods=['GET'])
+def inicio_api():
+    return "Hello World!"
 
 
 ## 1. POST: Registrar Actividad y Sumar XP
