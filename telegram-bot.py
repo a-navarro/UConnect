@@ -184,9 +184,10 @@ async def asistencia_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     """Instrucciones para registrar asistencia con QR."""
     asistencia_msg = (
         "📸 **REGISTRO DE ASISTENCIA**\n\n"
-        "1. Pide al profesor que muestre el Código QR en clase.\n"
-        "2. Usa la opción 'Adjuntar' (el clip) en Telegram y luego 'Escanear QR' para enviármelo.\n"
-        "3. Recibirás tu XP de asistencia y puntualidad (si es dentro de los primeros 10 minutos)."
+        "1. Tomale una foto a tu clase.\n"
+        "2. Usa la opción 'Adjuntar' en Telegram y envía tu foto.\n"
+        "3. Gemini AI revisará tu foto para ver si es una clase, y revisará los metadatos para ver si la foto es auténtica."
+        "4. Tu asistencia quedará registrada con la hora de la foto y se sumarán los puntos a tu perfil!"
     )
     await update.message.reply_text(asistencia_msg, parse_mode="Markdown")
 
