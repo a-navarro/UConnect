@@ -1,16 +1,252 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Perfil</title>
-</head>
-<body>
-    <h2>Perfil de {{ user.nombre }}</h2>
-    <p><strong>Telegram ID:</strong> {{ user.telegram_id }}</p>
-    <p><strong>XP Total:</strong> {{ user.xp_total }}</p>
-    <p><strong>Liga:</strong> {{ user.liga_actual }}</p>
-    <p><strong>Fecha creación:</strong> {{ user.fecha_creacion }}</p>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>UConnect Pitch</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            /* ESTILOS BASE */
+            body {
+                background-color: #0f172a; /* Slate 900 */
+                color: white;
+                font-family: 'Inter', sans-serif;
+                margin: 0;
+                overflow-x: hidden;
+                scroll-behavior: smooth;
+            }
 
-    <br>
-    <a href="/">Volver</a>
-</body>
-</html>
+            /* COMPORTAMIENTO TIPO DIAPOSITIVA (SCROLL SNAP) */
+            .slides-container {
+                height: 100vh;
+                width: 100vw;
+                overflow-y: scroll;
+                scroll-snap-type: y mandatory;
+            }
+
+            .slide {
+                height: 100vh;
+                width: 100vw;
+                scroll-snap-align: start;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 40px;
+                box-sizing: border-box;
+                position: relative;
+                border-bottom: 1px solid #1e293b;
+            }
+
+            /* DISEÑO PARA IMPRESIÓN (PDF) */
+            @media print {
+                body { background-color: #fff; color: #000; }
+                .slides-container { height: auto; overflow: visible; }
+                .slide { height: 100vh; page-break-after: always; background-color: white !important; color: black !important; border: none; }
+                .bg-accent { background-color: #eee !important; color: black !important; }
+                .text-accent { color: #4f46e5 !important; }
+                video { display: none; } /* Ocultar videos en PDF */
+                .video-placeholder { display: block !important; border: 2px dashed #000; padding: 20px; text-align: center; }
+            }
+
+            /* CLASES UTILITARIAS PERSONALIZADAS */
+            .text-accent { color: #818cf8; } /* Indigo 400 */
+            .bg-accent { background-color: #1e293b; } /* Slate 800 */
+            
+            .big-number {
+                font-size: 8rem;
+                line-height: 1;
+                font-weight: 900;
+                color: #334155;
+                position: absolute;
+                right: 40px;
+                bottom: 0px;
+                z-index: 0;
+                opacity: 0.5;
+            }
+
+            .content-box {
+                z-index: 10;
+                width: 100%;
+                max-width: 1000px;
+            }
+
+            /* VIDEOS */
+            .video-frame {
+                border-radius: 1rem;
+                overflow: hidden;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+                border: 4px solid #312e81;
+                background: black;
+                aspect-ratio: 16/9;
+                width: 80%;
+                margin: 0 auto;
+            }
+            .video-placeholder { display: none; }
+        </style>
+    </head>
+    <body>
+
+    <div class="slides-container">
+
+        <!-- SLIDE 1: PORTADA IMPACTANTE -->
+        <section class="slide bg-indigo-600">
+            <div class="content-box text-center">
+                <div class="inline-block px-4 py-2 bg-black/20 rounded-full text-sm font-bold tracking-widest mb-6">HACKATHON 2025</div>
+                <h1 class="text-8xl font-black mb-4 tracking-tighter">UCONNECT</h1>
+                <p class="text-3xl font-light text-indigo-100 max-w-2xl mx-auto">Gamificando la experiencia universitaria donde realmente importa.</p>
+            </div>
+        </section>
+
+        <!-- SLIDE 2: EL PROBLEMA (SIMPLE) -->
+        <section class="slide">
+            <div class="big-number">01</div>
+            <div class="content-box">
+                <h2 class="text-indigo-400 text-xl font-bold uppercase mb-8 tracking-wider">El Problema</h2>
+                <div class="grid grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h3 class="text-6xl font-bold mb-6 leading-tight">La Universidad es un <span class="text-indigo-500">Juego Difícil.</span></h3>
+                        <p class="text-2xl text-slate-400">Sin feedback, sin comunidad y con reglas aburridas. El resultado: deserción y estrés.</p>
+                    </div>
+                    <div class="grid gap-6">
+                        <div class="bg-accent p-6 rounded-xl flex items-center gap-6">
+                            <i class="fa-solid fa-ghost text-4xl text-slate-500"></i>
+                            <div>
+                                <h4 class="text-xl font-bold">Aislamiento</h4>
+                                <p class="text-slate-400">Estudiar solo es desmotivante.</p>
+                            </div>
+                        </div>
+                        <div class="bg-accent p-6 rounded-xl flex items-center gap-6">
+                            <i class="fa-solid fa-battery-quarter text-4xl text-red-400"></i>
+                            <div>
+                                <h4 class="text-xl font-bold">Burnout</h4>
+                                <p class="text-slate-400">Malos hábitos de sueño y estudio.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 3: LA SOLUCIÓN -->
+        <section class="slide">
+            <div class="big-number">02</div>
+            <div class="content-box text-center">
+                <h2 class="text-indigo-400 text-xl font-bold uppercase mb-4 tracking-wider">La Solución</h2>
+                <h3 class="text-5xl font-bold mb-12">No es otra App. Es Telegram.</h3>
+                
+                <div class="grid grid-cols-3 gap-6 text-left">
+                    <!-- Card 1 -->
+                    <div class="bg-accent p-8 rounded-2xl border-t-4 border-indigo-500 hover:-translate-y-2 transition">
+                        <i class="fa-solid fa-robot text-4xl text-indigo-400 mb-4"></i>
+                        <h4 class="text-2xl font-bold mb-2">Bot Inteligente</h4>
+                        <p class="text-slate-400">Tu coach de bolsillo. Accesible 24/7 sin instalar nada.</p>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="bg-accent p-8 rounded-2xl border-t-4 border-green-500 hover:-translate-y-2 transition">
+                        <i class="fa-solid fa-trophy text-4xl text-green-400 mb-4"></i>
+                        <h4 class="text-2xl font-bold mb-2">Ranking Real</h4>
+                        <p class="text-slate-400">Compite sanamente con amigos por XP y beneficios.</p>
+                    </div>
+                    <!-- Card 3 -->
+                    <div class="bg-accent p-8 rounded-2xl border-t-4 border-purple-500 hover:-translate-y-2 transition">
+                        <i class="fa-solid fa-brain text-4xl text-purple-400 mb-4"></i>
+                        <h4 class="text-2xl font-bold mb-2">Gemini AI</h4>
+                        <p class="text-slate-400">Análisis de hábitos y respuestas académicas al instante.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 4: DEMO BOT -->
+        <section class="slide">
+            <div class="big-number">03</div>
+            <div class="content-box text-center">
+                <h2 class="text-white text-4xl font-bold mb-8">Demo en Vivo: El Bot</h2>
+                
+                <!-- VIDEO CONTAINER -->
+                <div class="video-frame">
+                    <!-- Pon tu video aquí: bot_demo.mp4 -->
+                    <video autoplay muted loop class="w-full h-full object-cover">
+                        <source src="bot_demo.mp4" type="video/mp4">
+                        Tu navegador no soporta video.
+                    </video>
+                    <div class="video-placeholder text-black">
+                        <h3>[VIDEO DEMO BOT AQUÍ]</h3>
+                    </div>
+                </div>
+                
+            </div>
+        </section>
+
+        <!-- SLIDE 5: DASHBOARD WEB -->
+        <section class="slide">
+            <div class="big-number">04</div>
+            <div class="content-box grid grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-indigo-400 text-xl font-bold uppercase mb-4">Dashboard Web</h2>
+                    <h3 class="text-5xl font-bold mb-6">Visualiza tu Progreso</h3>
+                    <ul class="space-y-6 text-xl">
+                        <li class="flex items-center gap-4"><i class="fa-solid fa-check text-green-400"></i> Gráficos de estudio semanal</li>
+                        <li class="flex items-center gap-4"><i class="fa-solid fa-check text-green-400"></i> Monitoreo de sueño</li>
+                        <li class="flex items-center gap-4"><i class="fa-solid fa-check text-green-400"></i> Leaderboard global</li>
+                    </ul>
+                </div>
+                
+                <!-- VIDEO CONTAINER -->
+                <div class="video-frame" style="width: 100%; aspect-ratio: 4/3;">
+                    <!-- Pon tu video aquí: web_demo.mp4 -->
+                    <video autoplay muted loop class="w-full h-full object-cover">
+                        <source src="web_demo.mp4" type="video/mp4">
+                        Tu navegador no soporta video.
+                    </video>
+                    <div class="video-placeholder text-black">
+                        <h3>[VIDEO DEMO WEB AQUÍ]</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 6: CIERRE -->
+        <section class="slide bg-white text-black">
+            <div class="content-box text-center">
+                <h2 class="text-6xl font-black mb-8 text-black">¿Listos para Jugar?</h2>
+                <div class="flex justify-center gap-12 text-center">
+                    <div>
+                        <div class="text-4xl font-bold mb-2">Python</div>
+                        <div class="text-gray-500">Backend</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold mb-2">Flask</div>
+                        <div class="text-gray-500">API</div>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-bold mb-2 text-indigo-600">Gemini</div>
+                        <div class="text-gray-500">Inteligencia</div>
+                    </div>
+                </div>
+                <div class="mt-16">
+                    <p class="text-xl text-gray-400">Hackathon 2025 • Equipo UConnect</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // Script simple para navegación con teclado
+        document.addEventListener('keydown', (e) => {
+            const slides = document.querySelector('.slides-container');
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                slides.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+            }
+            if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                slides.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
+            }
+        });
+    </script>
+
+    </body>
+    </html>
