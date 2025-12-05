@@ -1,3 +1,9 @@
-# INSERTAR NOMBRE EPICO DEL PROYECTO
+# UConnect
 
 insertar readme épico
+
+librerias a instalar:
+flask
+telegram
+pandas
+requests

@@ -6,23 +6,48 @@ import uuid # Para generar IDs de log únicos de forma sencilla
 
 # --- CONFIGURACIÓN ---
 app = Flask(__name__)
+# Rutas relativas a la carpeta 'database'
 USUARIOS_CSV = 'database/usuarios.csv'
 REGISTROS_XP_CSV = 'database/registros.csv'
+
+# Asegurar que la carpeta 'database' exista al inicio
+if not os.path.exists('database'):
+    os.makedirs('database')
 
 # --- FUNCIONES DE MANEJO DE DATOS ---
 
 def cargar_dataframes():
-    """Carga los DataFrames desde los archivos CSV."""
-    # Si los archivos no existen, crea DataFrames vacíos con las columnas correctas
-    if not os.path.exists(USUARIOS_CSV):
-        df_u = pd.DataFrame(columns=['telegram_id', 'nombre', 'xp_total', 'liga_actual', 'fecha_creacion'])
-    else:
-        df_u = pd.read_csv(USUARIOS_CSV)
-        
-    if not os.path.exists(REGISTROS_XP_CSV):
-        df_r = pd.DataFrame(columns=['log_id', 'telegram_id', 'xp_ganado', 'tipo_actividad', 'fecha_registro'])
-    else:
-        df_r = pd.read_csv(REGISTROS_XP_CSV)
+    """
+    Carga los DataFrames desde los archivos CSV. 
+    Implementa lógica robusta para manejar archivos vacíos o inexistentes.
+    """
+    
+    # Definición de DataFrames vacíos con las columnas esperadas
+    columnas_usuarios = ['telegram_id', 'nombre', 'xp_total', 'liga_actual', 'fecha_creacion']
+    df_u = pd.DataFrame(columns=columnas_usuarios)
+    
+    columnas_registros = ['log_id', 'telegram_id', 'xp_ganado', 'tipo_actividad', 'fecha_registro']
+    df_r = pd.DataFrame(columns=columnas_registros)
+    
+    # 1. Manejo del DataFrame de Usuarios
+    if os.path.exists(USUARIOS_CSV) and os.path.getsize(USUARIOS_CSV) > 0:
+        try:
+            df_u = pd.read_csv(USUARIOS_CSV)
+        except pd.errors.EmptyDataError:
+            # Si el archivo tiene encabezado pero no datos, o falló la lectura: 
+            # se queda con el DataFrame vacío inicializado
+            print(f"Advertencia: El archivo {USUARIOS_CSV} existe pero está vacío o es ilegible. Inicializando un DataFrame vacío.")
+            pass # df_u ya está inicializado arriba
+
+    # 2. Manejo del DataFrame de Registros
+    if os.path.exists(REGISTROS_XP_CSV) and os.path.getsize(REGISTROS_XP_CSV) > 0:
+        try:
+            df_r = pd.read_csv(REGISTROS_XP_CSV)
+        except pd.errors.EmptyDataError:
+            # Si el archivo tiene encabezado pero no datos, o falló la lectura:
+            # se queda con el DataFrame vacío inicializado
+            print(f"Advertencia: El archivo {REGISTROS_XP_CSV} existe pero está vacío o es ilegible. Inicializando un DataFrame vacío.")
+            pass # df_r ya está inicializado arriba
         
     return df_u, df_r
 
@@ -35,7 +60,7 @@ def guardar_dataframes(df_u, df_r):
 
 @app.route('/', methods=['GET'])
 def inicio_api():
-    return "Hello World!"
+    return "Bienvenido a UConnect!"
 
 
 ## 1. POST: Registrar Actividad y Sumar XP
@@ -52,6 +77,7 @@ def registrar_actividad():
         return jsonify({"error": "Faltan campos requeridos (telegram_id, tipo_actividad, xp_a_sumar)"}), 400
 
     try:
+        # Intenta convertir a int. Si falla, genera error 400.
         telegram_id = int(data['telegram_id'])
         xp_a_sumar = int(data['xp_a_sumar'])
         tipo_actividad = data['tipo_actividad']
@@ -75,11 +101,12 @@ def registrar_actividad():
         'tipo_actividad': tipo_actividad,
         'fecha_registro': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
-    # Aseguramos que la columna sea numérica si no hay registros aún
+    # Concatenar el nuevo registro
     df_registros = pd.concat([df_registros, pd.DataFrame([nuevo_log])], ignore_index=True)
 
     # 3. Actualizar el XP total del usuario (Update en Usuarios)
-    df_usuarios.loc[idx, 'xp_total'] += xp_a_sumar
+    # Convertimos a float para asegurar operaciones, aunque luego se devuelva como int
+    df_usuarios.loc[idx, 'xp_total'] = df_usuarios.loc[idx, 'xp_total'].astype(float) + xp_a_sumar
 
     # 4. Guardar los archivos
     guardar_dataframes(df_usuarios, df_registros)
@@ -102,7 +129,12 @@ def obtener_ranking_semanal():
         return jsonify({"ranking": [], "mensaje": "No hay registros de actividad para calcular el ranking."}), 200
 
     # Convertir a datetime y definir el rango (últimos 7 días)
-    df_registros['fecha_registro'] = pd.to_datetime(df_registros['fecha_registro'])
+    # Aseguramos que la columna exista y sea tratable
+    if 'fecha_registro' not in df_registros.columns or df_registros['fecha_registro'].dtype == object:
+        df_registros['fecha_registro'] = pd.to_datetime(df_registros['fecha_registro'], errors='coerce')
+        # Limpiar filas donde la fecha no se pudo parsear
+        df_registros.dropna(subset=['fecha_registro'], inplace=True)
+    
     hace_siete_dias = datetime.now() - timedelta(days=7)
 
     # 1. Filtrar solo los registros de la última semana
@@ -141,7 +173,7 @@ def registrar_usuario():
     except ValueError:
         return jsonify({"error": "telegram_id debe ser un número entero."}), 400
 
-    df_usuarios, _ = cargar_dataframes()
+    df_usuarios, df_registros = cargar_dataframes()
 
     # Verificar si ya existe
     if not df_usuarios[df_usuarios['telegram_id'] == telegram_id].empty:
@@ -156,7 +188,9 @@ def registrar_usuario():
     }
     
     df_usuarios = pd.concat([df_usuarios, pd.DataFrame([nuevo_usuario])], ignore_index=True)
-    guardar_dataframes(df_usuarios, pd.DataFrame()) # Guardar solo df_usuarios
+    
+    # CORRECCIÓN: Guardar ambos dataframes 
+    guardar_dataframes(df_usuarios, df_registros) 
 
     return jsonify({"status": "success", "mensaje": "Usuario registrado correctamente."}), 201
 
@@ -164,13 +198,10 @@ def registrar_usuario():
 # --- INICIAR LA APLICACIÓN ---
 if __name__ == '__main__':
     # Esto asegura que los DataFrames se carguen/inicialicen antes de correr la app
-    # Cargar y guardar solo para crear los archivos si no existen
+    # Cargar y guardar solo para crear los archivos (con sus cabeceras) si no existen
     guardar_dataframes(*cargar_dataframes())
     
-    # En un entorno de producción o hackathon con Telegram,
-    # probablemente deberías usar un servidor real como gunicorn o uWSGI
-    # y exponerlo con algo como ngrok para que Telegram pueda contactarlo.
-    # Para pruebas locales, usa:
     print("\n--- INICIANDO API DE FLASK ---")
-    print("API lista en http://127.0.0.1:5000/")
+    print("API lista en http://localhost:5000/")
+    # Asegúrate de ejecutar este archivo desde la carpeta donde se encuentra
     app.run(debug=True)
