@@ -187,7 +187,7 @@ async def asistencia_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         "📸 **REGISTRO DE ASISTENCIA**\n\n"
         "1. Tomale una foto a tu clase.\n"
         "2. Usa la opción 'Adjuntar' en Telegram y envía tu foto.\n"
-        "3. Gemini AI revisará tu foto para ver si es una clase, y revisará los metadatos para ver si la foto es auténtica."
+        "3. Gemini AI revisará tu foto para ver si es una clase, y revisará los metadatos para ver si la foto es auténtica.\n"
         "4. Tu asistencia quedará registrada con la hora de la foto y se sumarán los puntos a tu perfil!"
     )
     await update.message.reply_text(asistencia_msg, parse_mode="Markdown")
