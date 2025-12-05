@@ -1,15 +1,312 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login UConnect</title>
-</head>
-<body>
-    <h2>Ingresar</h2>
-    <form action="/login" method="POST">
-        <label>Telegram ID o Username:</label><br>
-        <input type="text" name="user_id" required>
-        <br><br>
-        <button type="submit">Entrar</button>
-    </form>
-</body>
-</html>
+import React, { useState, useEffect, useMemo } from 'react';
+import { Award, Zap, BookOpen, Clock, Users, ShieldAlert, Heart, Calendar, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
+
+// --- MOCK DATA ---
+const MOCK_USER_ID = 'user-gamificador-88';
+
+const mockUserProfile = {
+    name: 'Estudiante Quest',
+    level: 12,
+    exp: 4500,
+    expToNextLevel: 1000,
+    health: 95, // Health based on risk detection (100 is perfect)
+    rank: 5,
+    weeklyHours: 15.5,
+    attendanceRate: 98, // %
+    punctualityBonus: 12, // Number of times on time
+};
+
+const mockRankingData = [
+    { id: 1, name: 'Maestro Jedi', level: 25, exp: 9820, hours: 45.2 },
+    { id: 2, name: 'Arquitecto de Notas', level: 21, exp: 8100, hours: 38.0 },
+    { id: 3, name: 'Mago del Saber', level: 18, exp: 7150, hours: 32.5 },
+    { id: 4, name: 'Cazador de Aprobados', level: 13, exp: 4900, hours: 19.8 },
+    { id: 5, name: mockUserProfile.name, level: mockUserProfile.level, exp: mockUserProfile.exp, hours: mockUserProfile.weeklyHours, isCurrentUser: true },
+    { id: 6, name: 'Caballero del Código', level: 10, exp: 3800, hours: 14.1 },
+    { id: 7, name: 'Ninja de la Biblioteca', level: 9, exp: 3500, hours: 12.0 },
+    { id: 8, name: 'Princesa de la Ciencia', level: 7, exp: 2900, hours: 9.5 },
+];
+
+const mockStatsData = {
+    weekly: [
+        { day: 'Lun', hours: 2.5 }, { day: 'Mar', hours: 3.0 }, { day: 'Mié', hours: 1.5 },
+        { day: 'Jue', hours: 4.0 }, { day: 'Vie', hours: 5.0 }, { day: 'Sáb', hours: 1.5 },
+        { day: 'Dom', hours: 0.0 }
+    ],
+    monthly: {
+        totalHours: 120,
+        averagePunctuality: 92,
+        bestDay: 'Miércoles (4.5h)',
+    }
+};
+
+// --- COMPONENTS ---
+
+// Card para mostrar métricas clave
+const MetricCard = ({ title, value, icon: Icon, colorClass = 'text-indigo-500', isLarge = false }) => (
+    <div className={`flex flex-col p-4 bg-white/10 backdrop-blur-sm rounded-xl shadow-lg border-l-4 ${colorClass} ${isLarge ? 'md:col-span-2' : ''}`}>
+        <div className="flex items-center space-x-3">
+            <Icon className={`w-6 h-6 ${colorClass}`} />
+            <span className="text-sm font-semibold text-gray-300">{title}</span>
+        </div>
+        <p className={`mt-2 ${isLarge ? 'text-3xl' : 'text-2xl'} font-bold text-white`}>{value}</p>
+    </div>
+);
+
+// Barra de Progreso de EXP
+const ExpBar = ({ exp, maxExp, level }) => {
+    const progress = Math.min(100, (exp / maxExp) * 100);
+    return (
+        <div className="w-full mt-4">
+            <div className="flex justify-between items-center text-xs font-medium text-gray-200">
+                <span>Nivel {level}</span>
+                <span>{exp.toLocaleString()} / {maxExp.toLocaleString()} EXP</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-3 mt-1">
+                <div 
+                    className="bg-green-500 h-3 rounded-full transition-all duration-500" 
+                    style={{ width: `${progress}%` }}
+                ></div>
+            </div>
+        </div>
+    );
+};
+
+// Componente principal de la aplicación
+const App = () => {
+    const [activeSection, setActiveSection] = useState('ranking'); // 'ranking' or 'stats'
+    const [rankingPeriod, setRankingPeriod] = useState('semanal'); // 'semanal', 'mensual', 'semestral'
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // Filter and sort ranking data based on the period (using EXP as proxy)
+    const sortedRanking = useMemo(() => {
+        // In a real app, this would fetch data based on the period.
+        // Here, we just sort the mock data by EXP.
+        return [...mockRankingData].sort((a, b) => b.exp - a.exp);
+    }, [rankingPeriod]);
+
+    // Calculate EXP needed for the next level
+    const expNeeded = mockUserProfile.expToNextLevel - (mockUserProfile.exp % mockUserProfile.expToNextLevel);
+
+    // Simulated "Health" based on the risk detection (BBDD)
+    const riskMessage = mockUserProfile.health < 90
+        ? "⚠️ ¡ALERTA DE RIESGO! Nuestros análisis detectan patrones de sueño anómalos o alta variabilidad. Prioriza tu bienestar. Utiliza /ayuda en el bot."
+        : "✅ Estado Óptimo. Mantienes patrones de estudio y asistencia saludables. ¡Sigue así!";
+
+    const healthColor = mockUserProfile.health < 90 ? 'bg-red-600' : 'bg-green-600';
+    const healthIcon = mockUserProfile.health < 90 ? ShieldAlert : Heart;
+
+    const handleMenuToggle = () => setIsMenuOpen(!isMenuOpen);
+
+    // Simple Bar Chart for Weekly Hours
+    const BarChart = ({ data }) => {
+        const totalMax = Math.max(...data.map(d => d.hours), 5); // Max 5 hours for scale
+        return (
+            <div className="flex justify-between items-end h-32 space-x-2 p-2 pt-4 bg-white/10 rounded-lg">
+                {data.map((item, index) => {
+                    const heightPercent = (item.hours / totalMax) * 100;
+                    return (
+                        <div key={index} className="flex flex-col items-center justify-end h-full flex-grow">
+                            <div
+                                className="w-4 md:w-6 bg-blue-500 rounded-t transition-all duration-500 hover:bg-blue-400"
+                                style={{ height: `${heightPercent}%` }}
+                                title={`${item.hours}h`}
+                            ></div>
+                            <span className="text-xs text-gray-400 mt-1">{item.day}</span>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-900 text-white font-sans p-4 md:p-8">
+            {/* Header / Title */}
+            <header className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-indigo-500">
+                    Study Quest Dashboard
+                </h1>
+                <div className="md:hidden">
+                    <button onClick={handleMenuToggle} className="p-2 rounded-full bg-indigo-600 hover:bg-indigo-700">
+                        {isMenuOpen ? <ChevronUp className="w-6 h-6"/> : <ChevronDown className="w-6 h-6"/>}
+                    </button>
+                </div>
+            </header>
+
+            {/* User Profile and Stats Summary (Top Section) */}
+            <div className={`p-6 mb-8 rounded-2xl shadow-2xl bg-gray-800 border-t-4 border-indigo-500`}>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div>
+                        <h2 className="text-2xl font-bold">{mockUserProfile.name}</h2>
+                        <p className="text-sm text-gray-400">ID de Usuario: {MOCK_USER_ID}</p>
+                    </div>
+                    <div className="mt-4 md:mt-0">
+                        <MetricCard title="Tu Rango Actual" value={`#${mockUserProfile.rank}`} icon={Award} colorClass="text-yellow-400" />
+                    </div>
+                </div>
+
+                <ExpBar 
+                    exp={mockUserProfile.exp % mockUserProfile.expToNextLevel}
+                    maxExp={mockUserProfile.expToNextLevel}
+                    level={mockUserProfile.level}
+                />
+
+                {/* Risk Alert Section */}
+                <div className={`mt-4 p-3 rounded-lg flex items-center space-x-3 transition-colors duration-300 ${healthColor}`}>
+                    <healthIcon className="w-5 h-5 text-white" />
+                    <p className="text-sm font-medium text-white">{riskMessage}</p>
+                </div>
+
+                {/* Detailed Metrics Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                    <MetricCard title="EXP Ganada" value={`+${mockUserProfile.exp.toLocaleString()}`} icon={Zap} colorClass="text-purple-400" />
+                    <MetricCard title="Horas de Estudio" value={`${mockUserProfile.weeklyHours}h`} icon={BookOpen} colorClass="text-cyan-400" />
+                    <MetricCard title="Asistencia (%)" value={`${mockUserProfile.attendanceRate}%`} icon={Users} colorClass="text-orange-400" />
+                    <MetricCard title="Bonos Puntualidad" value={mockUserProfile.punctualityBonus} icon={Clock} colorClass="text-pink-400" />
+                </div>
+            </div>
+
+            {/* Navigation and Main Content */}
+            <div className="flex flex-col md:flex-row md:space-x-8">
+                {/* Sidebar Navigation (Hidden on Mobile, Visible as Toggled Menu) */}
+                <nav className={`w-full md:w-64 bg-gray-800 rounded-2xl p-4 mb-6 md:mb-0 shadow-lg ${isMenuOpen ? 'block' : 'hidden'} md:block`}>
+                    <h3 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2">Secciones</h3>
+                    <ul>
+                        <li className="mb-2">
+                            <button
+                                onClick={() => setActiveSection('ranking')}
+                                className={`w-full text-left p-3 rounded-lg transition-all flex items-center space-x-3 ${activeSection === 'ranking' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-700'}`}
+                            >
+                                <Award className="w-5 h-5" />
+                                <span>Ranking Competitivo</span>
+                            </button>
+                        </li>
+                        <li className="mb-2">
+                            <button
+                                onClick={() => setActiveSection('stats')}
+                                className={`w-full text-left p-3 rounded-lg transition-all flex items-center space-x-3 ${activeSection === 'stats' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-700'}`}
+                            >
+                                <BarChart3 className="w-5 h-5" />
+                                <span>Estadísticas Detalladas</span>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+
+                {/* Main Content Area */}
+                <main className="flex-grow bg-gray-800 rounded-2xl p-6 shadow-2xl">
+                    {activeSection === 'ranking' ? (
+                        <div className="ranking-view">
+                            <h2 className="text-2xl font-bold mb-4 flex items-center space-x-2">
+                                <Award className="w-6 h-6 text-yellow-400"/>
+                                <span>Ranking Global</span>
+                            </h2>
+                            <div className="flex space-x-2 mb-6 border-b border-gray-700 pb-3">
+                                {['semanal', 'mensual', 'semestral'].map(period => (
+                                    <button
+                                        key={period}
+                                        onClick={() => setRankingPeriod(period)}
+                                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                                            rankingPeriod === period
+                                                ? 'bg-green-500 text-gray-900 shadow-lg'
+                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                        }`}
+                                    >
+                                        {period.charAt(0).toUpperCase() + period.slice(1)}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Ranking Table */}
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-700">
+                                    <thead>
+                                        <tr className="text-xs text-gray-400 uppercase tracking-wider bg-gray-700/50">
+                                            <th className="px-6 py-3 text-left">Posición</th>
+                                            <th className="px-6 py-3 text-left">Nombre</th>
+                                            <th className="px-6 py-3 text-right">Nivel</th>
+                                            <th className="px-6 py-3 text-right">EXP Total</th>
+                                            <th className="px-6 py-3 text-right">Horas Estudio ({rankingPeriod})</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-700">
+                                        {sortedRanking.map((user, index) => (
+                                            <tr key={user.id} className={`transition-colors duration-150 ${user.isCurrentUser ? 'bg-indigo-600/50 font-bold text-white shadow-inner' : 'hover:bg-gray-700'}`}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                                    {index < 3 ? (
+                                                        <span className={`text-xl font-extrabold ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : 'text-orange-600'}`}>
+                                                            {index + 1}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-300">{index + 1}</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                                                    {user.name} {user.isCurrentUser && '(Tú)'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-400">{user.level}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-purple-300">{user.exp.toLocaleString()}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-cyan-300">{user.hours.toFixed(1)}h</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="stats-view">
+                            <h2 className="text-2xl font-bold mb-4 flex items-center space-x-2">
+                                <BarChart3 className="w-6 h-6 text-cyan-400"/>
+                                <span>Estadísticas y Análisis de Rendimiento</span>
+                            </h2>
+
+                            {/* Weekly Study Hours Chart */}
+                            <div className="bg-gray-700/50 p-4 rounded-xl mb-6 shadow-md">
+                                <h3 className="text-lg font-semibold mb-3 text-gray-200 flex items-center space-x-2">
+                                    <Calendar className='w-4 h-4'/>
+                                    <span>Horas de Estudio Semanales</span>
+                                </h3>
+                                <BarChart data={mockStatsData.weekly} />
+                                <p className="text-sm text-gray-400 mt-2 text-center">Visualización de tu disciplina diaria.</p>
+                            </div>
+
+                            {/* Monthly Summary */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <MetricCard 
+                                    title="Total Horas (Mensual)" 
+                                    value={`${mockStatsData.monthly.totalHours}h`} 
+                                    icon={BookOpen} 
+                                    colorClass="text-fuchsia-400" 
+                                />
+                                <MetricCard 
+                                    title="Puntualidad Promedio" 
+                                    value={`${mockStatsData.monthly.averagePunctuality}%`} 
+                                    icon={Clock} 
+                                    colorClass="text-lime-400" 
+                                />
+                                <MetricCard 
+                                    title="Día Más Productivo" 
+                                    value={mockStatsData.monthly.bestDay} 
+                                    icon={Zap} 
+                                    colorClass="text-yellow-400" 
+                                />
+                            </div>
+
+                            <p className="mt-6 p-4 bg-yellow-900/40 border-l-4 border-yellow-500 rounded-lg text-sm text-yellow-100">
+                                🔔 **Próxima Característica:** ¡Pronto podrás ver tu progreso en Logros y Medallas! Vuelve pronto para reclamar tus insignias.
+                            </p>
+                        </div>
+                    )}
+                </main>
+            </div>
+
+            {/* Footer / Branding */}
+            <footer className="mt-8 text-center text-gray-500 text-xs">
+                &copy; {new Date().getFullYear()} Study Quest. Potenciado por la Gamificación y el Bienestar.
+            </footer>
+        </div>
+    );
+};
+
+export default App; 
