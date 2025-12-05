@@ -262,7 +262,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 # --- 4. HANDLER DE MENSAJES DE TEXTO LIBRE (IA - Gemini) ---
 
 async def ia_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Maneja cualquier texto que no sea un comando y lo trata como consulta IA (Con soporte para mensajes largos)."""
+    """Maneja cualquier texto que no sea un comando y lo trata como consulta IA (Con soporte para mensajes largos y corte inteligente)."""
     texto_usuario = update.message.text
     
     if not GEMINI_KEY:
@@ -279,33 +279,48 @@ async def ia_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
         # Generar respuesta
         response = client.models.generate_content(
-            model="gemini-2.5-flash", # Puedes cambiar a "gemini-2.0-flash-exp" si tienes acceso
+            model="gemini-2.5-flash", # Mantenemos tu versión
             contents=texto_usuario,
         )
         
-        respuesta_completa = response.text
+        texto_completo = response.text
 
-        # --- LÓGICA PARA DIVIDIR MENSAJES LARGOS (> 4096 caracteres) ---
-        MAX_LENGTH = 4000 # Dejamos un margen de seguridad (Telegram permite 4096)
+        # --- LÓGICA DE CORTE INTELIGENTE (> 4096 caracteres) ---
+        MAX_LENGTH = 4000 # Dejamos margen de seguridad
         
-        if len(respuesta_completa) > MAX_LENGTH:
-            # Dividimos el mensaje en trozos
-            for i in range(0, len(respuesta_completa), MAX_LENGTH):
-                chunk = respuesta_completa[i:i+MAX_LENGTH]
-                try:
-                    # Intentamos enviar con Markdown (negritas, etc.)
-                    await update.message.reply_text(chunk, parse_mode="Markdown")
-                except Exception:
-                    # Si falla el formato (ej: cortó una negrita a la mitad), enviamos texto plano
-                    await update.message.reply_text(chunk)
-        else:
-            # Si es corto, enviamos normal
+        while len(texto_completo) > 0:
+            if len(texto_completo) <= MAX_LENGTH:
+                # Caso 1: El texto cabe completo en un mensaje
+                chunk = texto_completo
+                texto_completo = ""
+            else:
+                # Caso 2: El texto es muy largo, hay que buscar dónde cortar
+                
+                # A. Prioridad 1: Buscar el último salto de línea (fin de párrafo)
+                corte = texto_completo.rfind('\n', 0, MAX_LENGTH)
+                
+                # B. Prioridad 2: Si no hay párrafos, buscar el último espacio (fin de palabra)
+                if corte == -1:
+                    corte = texto_completo.rfind(' ', 0, MAX_LENGTH)
+                
+                # C. Prioridad 3: Si es una palabra gigante, cortar a la fuerza
+                if corte == -1:
+                    corte = MAX_LENGTH
+                
+                # Definimos el trozo a enviar
+                chunk = texto_completo[:corte]
+                
+                # Preparamos el resto del texto para la siguiente vuelta (quitando espacios al inicio)
+                texto_completo = texto_completo[corte:].lstrip()
+
+            # Enviamos el trozo actual
             try:
-                await update.message.reply_text(respuesta_completa, parse_mode="Markdown")
+                # Intentamos enviar con Markdown (negritas, etc.)
+                await update.message.reply_text(chunk, parse_mode="Markdown")
             except Exception:
-                # Fallback a texto plano si el Markdown de Gemini es inválido
-                await update.message.reply_text(respuesta_completa)
-        # ---------------------------------------------------------------
+                # Si falla el formato (ej: cortó una negrita a la mitad), enviamos texto plano
+                await update.message.reply_text(chunk)
+        # -------------------------------------------------------
 
     except ImportError:
         logger.critical("El paquete 'google-genai' no está instalado.")
