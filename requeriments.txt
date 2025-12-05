@@ -1,0 +1,6 @@
+flask
+pandas
+requests
+telegram
+python-telegram-bot
+google-genai
