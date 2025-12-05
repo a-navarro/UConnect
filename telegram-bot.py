@@ -334,6 +334,25 @@ async def ia_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         logger.error(f"Error en el handler de IA: {e}")
         await update.message.reply_text("😵‍💫 La IA tuvo un problema procesando tu solicitud.")
 
+async def ayuda_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Envía enlaces útiles de la UC y recursos de bienestar."""
+    ayuda_msg = (
+        "🆘 **CENTRO DE RECURSOS UC**\n\n"
+        "¡No estás solo en esta aventura! Aquí tienes herramientas clave:\n\n"
+        "📚 **Académico**\n"
+        "• [Canvas UC](https://cursos.canvas.uc.cl/) - Tus cursos.\n"
+        "• [Portal UC](https://portal.uc.cl/) - Trámites y notas.\n"
+        "• [Bibliotecas](https://bibliotecas.uc.cl/) - Recursos de estudio.\n\n"
+        "❤️ **Bienestar y Salud (Vitalidad)**\n"
+        "• [Salud Estudiantil](https://saludestudiantil.uc.cl/) - Pide hora médica/dental.\n"
+        "• [Apoyo Psicológico (Ansiedad/Estrés)](https://saludestudiantil.uc.cl/salud-mental/) - Tu salud mental es primero.\n"
+        "• [Deportes UC](https://deportes.uc.cl/) - ¡Mantente activo!\n\n"
+        "⚠️ **¿Emergencia en Campus?**\n"
+        "Llama al anexo **5000** desde red fija o **+56 9 5504 5000**."
+    )
+    # disable_web_page_preview=True hace que el chat no se llene de miniaturas de las webs
+    await update.message.reply_text(ayuda_msg, parse_mode="Markdown", disable_web_page_preview=True)
+
 # --- 5. FUNCIÓN PRINCIPAL (MAIN) ---
 
 def main() -> None:
@@ -356,6 +375,7 @@ def main() -> None:
     application.add_handler(CommandHandler("asistencia", asistencia_command))
     application.add_handler(CommandHandler("sueno", sueno_command))
     application.add_handler(CommandHandler("misiones", misiones_command))
+    application.add_handler(CommandHandler("ayuda", ayuda_command))
     
     # Handler para los botones interactivos
     application.add_handler(CallbackQueryHandler(button_handler))
