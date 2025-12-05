@@ -195,6 +195,29 @@ def registrar_usuario():
     return jsonify({"status": "success", "mensaje": "Usuario registrado correctamente."}), 201
 
 
+# 4. GET: Obtener perfil de un usuario específico
+@app.route('/api/usuario/<int:telegram_id>', methods=['GET'])
+def obtener_perfil(telegram_id):
+    """Devuelve los datos de un usuario para el comando /miperfil"""
+    df_usuarios, _ = cargar_dataframes()
+    
+    # Filtramos por ID
+    usuario = df_usuarios[df_usuarios['telegram_id'] == telegram_id]
+    
+    if usuario.empty:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+        
+    # Convertimos el primer resultado a diccionario
+    # fillna maneja casos donde no haya datos (NaN)
+    datos = usuario.iloc[0].fillna("").to_dict()
+    
+    # Aseguramos que los tipos de datos sean JSON serializables (int/float nativos)
+    if 'xp_total' in datos:
+        datos['xp_total'] = int(datos['xp_total'])
+        
+    return jsonify(datos), 200
+
+
 # --- INICIAR LA APLICACIÓN ---
 if __name__ == '__main__':
     # Esto asegura que los DataFrames se carguen/inicialicen antes de correr la app
