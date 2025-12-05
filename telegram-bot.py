@@ -251,7 +251,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         
         if data == "estudio_otro":
             # Si el usuario eligió "Otra Cantidad...", pedimos los minutos
-            await query.edit_message_text("Por favor, dime cuántos minutos estudiaste. (Responde con un número)")
+            await query.edit_message_text("Por favor, dime cuántos minutos estudiaste. En formato /estudio [número]")
             # Nota: Para manejar esta respuesta, en un proyecto más complejo se usaría un ConversationHandler.
         
         else:
@@ -262,37 +262,57 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 # --- 4. HANDLER DE MENSAJES DE TEXTO LIBRE (IA - Gemini) ---
 
 async def ia_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Maneja cualquier texto que no sea un comando y lo trata como consulta IA."""
+    """Maneja cualquier texto que no sea un comando y lo trata como consulta IA (Con soporte para mensajes largos)."""
     texto_usuario = update.message.text
     
-    # OBTENER LA CLAVE DE GEMINI DESDE LAS VARIABLES DE ENTORNO
-    
     if not GEMINI_KEY:
-        logger.error("La clave de Gemini (GEMINI_API_KEY) no está configurada en las variables de entorno.")
-        await update.message.reply_text("❌ Error IA: La clave del modelo Gemini no está configurada. Pide ayuda al administrador.")
+        logger.error("La clave de Gemini no está configurada en parametros.py")
+        await update.message.reply_text("❌ Error IA: Falta la API Key en configuración.")
         return
         
     try:
         from google import genai
         client = genai.Client(api_key=GEMINI_KEY)
 
-        # Muestra un mensaje de espera
-        await update.message.reply_text("💭 Procesando tu consulta con IA...")
+        # UX: Muestra "escribiendo..." en el chat mientras la IA piensa
+        await update.message.reply_chat_action("typing") 
 
+        # Generar respuesta
         response = client.models.generate_content(
-            model="gemini-2.5-flash", 
+            model="gemini-2.5-flash", # Puedes cambiar a "gemini-2.0-flash-exp" si tienes acceso
             contents=texto_usuario,
-            # Se puede añadir un System Instruction aquí si el bot debe actuar como tutor
         )
         
-        await update.message.reply_text(response.text) # Telegram puede manejar Markdown automáticamente
+        respuesta_completa = response.text
+
+        # --- LÓGICA PARA DIVIDIR MENSAJES LARGOS (> 4096 caracteres) ---
+        MAX_LENGTH = 4000 # Dejamos un margen de seguridad (Telegram permite 4096)
+        
+        if len(respuesta_completa) > MAX_LENGTH:
+            # Dividimos el mensaje en trozos
+            for i in range(0, len(respuesta_completa), MAX_LENGTH):
+                chunk = respuesta_completa[i:i+MAX_LENGTH]
+                try:
+                    # Intentamos enviar con Markdown (negritas, etc.)
+                    await update.message.reply_text(chunk, parse_mode="Markdown")
+                except Exception:
+                    # Si falla el formato (ej: cortó una negrita a la mitad), enviamos texto plano
+                    await update.message.reply_text(chunk)
+        else:
+            # Si es corto, enviamos normal
+            try:
+                await update.message.reply_text(respuesta_completa, parse_mode="Markdown")
+            except Exception:
+                # Fallback a texto plano si el Markdown de Gemini es inválido
+                await update.message.reply_text(respuesta_completa)
+        # ---------------------------------------------------------------
 
     except ImportError:
-        logger.critical("El paquete 'google-genai' no está instalado. Ejecuta 'pip install google-genai'.")
-        await update.message.reply_text("❌ Error IA: Falta la librería de Gemini. Contacta al administrador.")
+        logger.critical("El paquete 'google-genai' no está instalado.")
+        await update.message.reply_text("❌ Error IA: Falta la librería google-genai.")
     except Exception as e:
         logger.error(f"Error en el handler de IA: {e}")
-        await update.message.reply_text("❌ Error IA: Ocurrió un problema al conectar con el modelo de lenguaje.")
+        await update.message.reply_text("😵‍💫 La IA tuvo un problema procesando tu solicitud.")
 
 # --- 5. FUNCIÓN PRINCIPAL (MAIN) ---
 
