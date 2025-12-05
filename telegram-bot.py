@@ -1,7 +1,6 @@
 import logging
 import os 
 from parametros import API_URL, TOKEN_TELEGRAM
-from backend.API_KEY import GEMINI_KEY
 import requests # Necesario para las llamadas a la API de tu backend
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -118,7 +117,7 @@ async def ranking_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     else:
         # Formatear el ranking_data (asumimos que es una lista de objetos con 'nombre' y 'xp')
         ranking_list = [
-            f"{i+1}. {p['nombre']} - {p.get('xp_semanal', 0)} XP" + (" 👑" if i == 0 else "")
+            f"{i+1}. {p['nombre']} - {p['xp']} XP" + (" 👑" if i == 0 else "")
             for i, p in enumerate(ranking_data[:10])
         ]
         
@@ -171,7 +170,7 @@ async def estudio_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         try:
             minutos = int(context.args[0])
             await _registrar_estudio_db(update.effective_user.id, minutos, update, is_command=True)
-        except ValueError:
+        except ValueError: 
             await update.message.reply_text("Formato inválido. Usa /estudio <minutos> o toca un botón.")
         return # Sale de la función si ya procesó argumentos
         
@@ -204,24 +203,27 @@ async def sueno_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         horas = float(context.args[0])
         xp_ganado = 0
         
-        if 5 <= horas <= 12: # Rango de horas razonable
-            
-            if 7 <= horas <= 9:
+        if 2 <= horas <= 30: # Rango de horas razonable
+            if 7 <= horas <= 9: 
                 xp_ganado = 150 # XP extra por sueño adecuado
                 mensaje_extra = "¡Felicidades! por un descanso óptimo."
-            else:
-                xp_ganado = 50
-                mensaje_extra = "Gracias por registrarlo."
-            
+            elif 2 <= horas <= 4:
+                xp_ganado = 10
+                mensaje_extra = "Gracias por registrarlo. OJO! Recuerda que un descanso óptimo está entre 7 y 9 horas."
+
+            elif 10 <= horas <= 20:
+                xp_ganado = 10
+                mensaje_extra = "Gracias por registrarlo. OJO! Recuerda que un descanso óptimo está entre 7 y 9 horas."
+
             resultado = _registrar_actividad_api(update.effective_user.id, "sueno", xp_ganado)
             
-            if resultado["success"]:
+            if resultado["success"]: 
                 await update.message.reply_text(f"✅ Has registrado {horas} horas de sueño. {mensaje_extra} **+{xp_ganado} XP**.", parse_mode="Markdown")
             else:
                  await update.message.reply_text(f"❌ Error al registrar en el backend. {mensaje_extra}")
 
         else:
-             await update.message.reply_text("Por favor, ingresa un valor de horas de sueño razonable (entre 5 y 12).")
+             await update.message.reply_text("Por favor, El rango ")
 
     except ValueError:
         await update.message.reply_text("Formato inválido. Por favor, usa un número.")
@@ -262,72 +264,38 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 # --- 4. HANDLER DE MENSAJES DE TEXTO LIBRE (IA - Gemini) ---
 
 async def ia_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Maneja cualquier texto que no sea un comando y lo trata como consulta IA (Con soporte para mensajes largos y corte inteligente)."""
+    """Maneja cualquier texto que no sea un comando y lo trata como consulta IA."""
     texto_usuario = update.message.text
     
+    # OBTENER LA CLAVE DE GEMINI DESDE LAS VARIABLES DE ENTORNO
+    GEMINI_KEY = os.getenv("GEMINI_API_KEY") 
+    
     if not GEMINI_KEY:
-        logger.error("La clave de Gemini no está configurada en parametros.py")
-        await update.message.reply_text("❌ Error IA: Falta la API Key en configuración.")
+        logger.error("La clave de Gemini (GEMINI_API_KEY) no está configurada en las variables de entorno.")
+        await update.message.reply_text("❌ Error IA: La clave del modelo Gemini no está configurada. Pide ayuda al administrador.")
         return
         
     try:
         from google import genai
         client = genai.Client(api_key=GEMINI_KEY)
 
-        # UX: Muestra "escribiendo..." en el chat mientras la IA piensa
-        await update.message.reply_chat_action("typing") 
+        # Muestra un mensaje de espera
+        await update.message.reply_text("💭 Procesando tu consulta con IA...")
 
-        # Generar respuesta
         response = client.models.generate_content(
-            model="gemini-2.5-flash", # Mantenemos tu versión
+            model="gemini-2.5-flash", 
             contents=texto_usuario,
+            # Se puede añadir un System Instruction aquí si el bot debe actuar como tutor
         )
         
-        texto_completo = response.text
-
-        # --- LÓGICA DE CORTE INTELIGENTE (> 4096 caracteres) ---
-        MAX_LENGTH = 4000 # Dejamos margen de seguridad
-        
-        while len(texto_completo) > 0:
-            if len(texto_completo) <= MAX_LENGTH:
-                # Caso 1: El texto cabe completo en un mensaje
-                chunk = texto_completo
-                texto_completo = ""
-            else:
-                # Caso 2: El texto es muy largo, hay que buscar dónde cortar
-                
-                # A. Prioridad 1: Buscar el último salto de línea (fin de párrafo)
-                corte = texto_completo.rfind('\n', 0, MAX_LENGTH)
-                
-                # B. Prioridad 2: Si no hay párrafos, buscar el último espacio (fin de palabra)
-                if corte == -1:
-                    corte = texto_completo.rfind(' ', 0, MAX_LENGTH)
-                
-                # C. Prioridad 3: Si es una palabra gigante, cortar a la fuerza
-                if corte == -1:
-                    corte = MAX_LENGTH
-                
-                # Definimos el trozo a enviar
-                chunk = texto_completo[:corte]
-                
-                # Preparamos el resto del texto para la siguiente vuelta (quitando espacios al inicio)
-                texto_completo = texto_completo[corte:].lstrip()
-
-            # Enviamos el trozo actual
-            try:
-                # Intentamos enviar con Markdown (negritas, etc.)
-                await update.message.reply_text(chunk, parse_mode="Markdown")
-            except Exception:
-                # Si falla el formato (ej: cortó una negrita a la mitad), enviamos texto plano
-                await update.message.reply_text(chunk)
-        # -------------------------------------------------------
+        await update.message.reply_text(response.text) # Telegram puede manejar Markdown automáticamente
 
     except ImportError:
-        logger.critical("El paquete 'google-genai' no está instalado.")
-        await update.message.reply_text("❌ Error IA: Falta la librería google-genai.")
+        logger.critical("El paquete 'google-genai' no está instalado. Ejecuta 'pip install google-genai'.")
+        await update.message.reply_text("❌ Error IA: Falta la librería de Gemini. Contacta al administrador.")
     except Exception as e:
         logger.error(f"Error en el handler de IA: {e}")
-        await update.message.reply_text("😵‍💫 La IA tuvo un problema procesando tu solicitud.")
+        await update.message.reply_text("❌ Error IA: Ocurrió un problema al conectar con el modelo de lenguaje.")
 
 # --- 5. FUNCIÓN PRINCIPAL (MAIN) ---
 
