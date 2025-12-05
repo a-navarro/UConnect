@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Simple UConnect</title>
-    <!-- Carga de Tailwind CSS para un diseño limpio y moderno -->
+    <title>UConnect API Tester</title>
+    <!-- Carga de Tailwind CSS para un diseño limpio y responsive -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'primary': '#4f46e5', // Índigo
-                        'success': '#10b981', // Verde
+                        'primary': '#4f46e5',
+                        'secondary': '#8b5cf6',
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
@@ -22,134 +22,210 @@
         }
     </script>
     <style>
-        /* Estilos básicos para la aplicación Single Page (SPA) */
-        .page { 
-            display: none; 
-            min-height: 80vh; /* Para centrar verticalmente */
-        }
-        .active-page { 
-            display: flex; 
-            animation: fadeIn 0.5s ease-out; 
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        /* Estilos personalizados para la interfaz */
         .card {
             background-color: white;
-            padding: 32px;
-            border-radius: 1.5rem; /* Esquinas más redondeadas */
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .input-style {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 1rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background-color: #6366f1;
+        }
+        .response-box {
+            min-height: 100px;
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
         }
     </style>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen font-sans p-4">
+<body class="bg-gray-100 min-h-screen flex flex-col font-sans p-4">
 
-    <!-- CONTENEDOR PRINCIPAL DE LA APLICACIÓN -->
-    <main class="w-full max-w-sm">
+    <!-- Encabezado -->
+    <header class="text-center py-6 bg-white shadow-md rounded-xl mb-6">
+        <h1 class="text-3xl font-bold text-primary">UConnect API Explorer</h1>
+        <p class="text-gray-600">Interactúa con los endpoints de tu API de gestión de XP.</p>
+        <p class="text-sm text-red-500 mt-2">¡Recuerda! Tu servidor de Flask debe estar corriendo en `http://localhost:5000`.</p>
+    </header>
 
-        <!-- VISTA 1: LOGIN -->
-        <div id="login-page" class="page active-page flex-col items-center justify-center">
-            <div class="card w-full text-center">
-                <h1 class="text-3xl font-bold text-primary mb-2">UConnect Login</h1>
-                <p class="text-gray-500 mb-8">Ingresa tu identificador para acceder.</p>
-                
-                <form id="form-login" class="space-y-4">
-                    <input type="text" id="user-input" 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary focus:border-primary transition" 
-                           placeholder="ID o Nombre de Usuario" required>
-                    
-                    <button type="submit" 
-                            class="w-full bg-primary text-white font-semibold py-3 rounded-xl hover:bg-indigo-600 transition duration-200 shadow-lg shadow-primary/30">
-                        Acceder al Perfil
-                    </button>
-                </form>
+    <!-- Contenedor Principal (Flexible para responsividad) -->
+    <main class="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto w-full">
 
-                <p id="login-message" class="mt-4 text-sm font-medium text-red-500"></p>
-            </div>
+        <!-- Columna 1: Registrar Usuario -->
+        <div class="card col-span-1">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM12 18H8a2 2 0 01-2-2v-2a4 4 0 014-4h4a4 4 0 014 4v2a2 2 0 01-2 2z"></path></svg>
+                1. Registrar Usuario (POST)
+            </h2>
+            <form id="form-register-user">
+                <input type="number" id="reg-id" class="input-style" placeholder="ID de Telegram (ej: 99990001)" required>
+                <input type="text" id="reg-name" class="input-style" placeholder="Nombre de Usuario (ej: Antonio)" required>
+                <button type="submit" class="btn-primary">Registrar Usuario</button>
+            </form>
         </div>
 
-        <!-- VISTA 2: PERFIL DEL USUARIO -->
-        <div id="profile-page" class="page flex-col items-center justify-center">
-            <div class="card w-full text-center">
-                <h1 class="text-3xl font-bold text-success mb-6">Tu Perfil de Usuario</h1>
-                
-                <div class="mb-8 p-6 bg-gray-100 rounded-xl space-y-3">
-                    <p class="text-sm font-medium text-gray-500">ID/Nombre de Usuario Ingresado:</p>
-                    <p id="profile-id" class="text-2xl font-extrabold text-gray-800 break-words"></p>
-                </div>
-
-                <!-- Datos Ficticios del Perfil -->
-                <div class="grid grid-cols-2 gap-4 text-center">
-                    <div class="p-4 bg-primary/10 rounded-xl">
-                        <p class="text-xs font-medium text-primary">XP Total</p>
-                        <p id="profile-xp" class="text-xl font-bold text-primary">5,480</p>
-                    </div>
-                    <div class="p-4 bg-success/10 rounded-xl">
-                        <p class="text-xs font-medium text-success">Liga Actual</p>
-                        <p id="profile-league" class="text-xl font-bold text-success">Guerrero</p>
-                    </div>
-                </div>
-
-                <button onclick="changePage('login-page'); document.getElementById('form-login').reset();"
-                        class="mt-8 w-full bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-300 transition duration-200">
-                    ← Volver al Login
-                </button>
-            </div>
+        <!-- Columna 2: Registrar Actividad -->
+        <div class="card col-span-1">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                2. Registrar Actividad (POST)
+            </h2>
+            <form id="form-register-activity">
+                <input type="number" id="act-id" class="input-style" placeholder="ID de Telegram" required>
+                <select id="act-type" class="input-style" required>
+                    <option value="" disabled selected>Selecciona Actividad</option>
+                    <option value="Estudio">Estudio</option>
+                    <option value="Asistencia">Asistencia</option>
+                    <option value="Sueño">Sueño</option>
+                    <!-- Puedes añadir más tipos de actividad aquí -->
+                </select>
+                <input type="number" id="act-xp" class="input-style" placeholder="XP a Sumar (ej: 200)" required>
+                <button type="submit" class="btn-primary">Sumar XP</button>
+            </form>
         </div>
 
+        <!-- Columna 3: Ver Ranking y Resupesta -->
+        <div class="card col-span-1">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                3. Ranking Semanal (GET)
+            </h2>
+            <button id="btn-get-ranking" class="btn-primary mb-4">Obtener Ranking</button>
+            
+            <h3 class="text-lg font-medium text-gray-700 mb-2">Respuesta de la API...</h3>
+            <div id="api-response" class="response-box text-sm">
+                Esperando interacción...
+            </div>
+        </div>
     </main>
 
+    <!-- Script de JavaScript para la lógica de la API -->
     <script>
-        // Función para cambiar de vista (página)
-        function changePage(pageId, userData = null) {
-            // Oculta todas las vistas
-            document.querySelectorAll('.page').forEach(page => {
-                page.classList.remove('active-page');
-                page.style.display = 'none';
-            });
+        const API_BASE = 'http://localhost:5000/api';
+        const responseBox = document.getElementById('api-response');
 
-            // Muestra la vista objetivo
-            const targetPage = document.getElementById(pageId);
-            if (targetPage) {
-                targetPage.classList.add('active-page');
-                targetPage.style.display = 'flex'; // Usar flex para mantener el centrado
+        /**
+         * Función genérica para manejar las peticiones Fetch
+         * @param {string} endpoint - La ruta de la API (ej: registrar_usuario)
+         * @param {string} method - El método HTTP (POST o GET)
+         * @param {object} [data=null] - Los datos a enviar en el cuerpo (para POST)
+         */
+        async function callApi(endpoint, method, data = null) {
+            responseBox.innerHTML = 'Cargando...';
+            const url = `${API_BASE}/${endpoint}`;
 
-                // Si cambiamos a la página de perfil, actualizamos los datos
-                if (pageId === 'profile-page' && userData) {
-                    document.getElementById('profile-id').textContent = userData;
-                    // Aquí podríamos cargar datos reales de la API en el futuro
+            try {
+                const config = {
+                    method: method,
+                    headers: {
+                        // Importante para que Flask sepa decodificar el JSON
+                        'Content-Type': 'application/json' 
+                    },
+                };
+
+                if (data) {
+                    config.body = JSON.stringify(data);
                 }
+
+                const response = await fetch(url, config);
+                let result;
+
+                // Intentar parsear la respuesta como JSON
+                try {
+                    result = await response.json();
+                } catch (e) {
+                    // Si falla, usar el texto plano de la respuesta (ej. para errores HTML)
+                    result = await response.text();
+                    responseBox.innerHTML = `<span class="text-red-500">Error (No JSON):</span><br>${result}`;
+                    return;
+                }
+
+                // Mostrar el resultado en el contenedor
+                responseBox.innerHTML = JSON.stringify(result, null, 2);
+
+                // Aplicar estilo de éxito o error basado en el código HTTP
+                if (response.ok) {
+                    responseBox.classList.remove('bg-red-200', 'text-red-800');
+                    responseBox.classList.add('bg-green-100', 'text-green-800');
+                } else {
+                    responseBox.classList.remove('bg-green-100', 'text-green-800');
+                    responseBox.classList.add('bg-red-200', 'text-red-800');
+                }
+
+            } catch (error) {
+                // Error de red (servidor apagado)
+                console.error("Fetch Error:", error);
+                responseBox.classList.remove('bg-green-100', 'text-green-800');
+                responseBox.classList.add('bg-red-200', 'text-red-800');
+                responseBox.innerHTML = `❌ Error de Conexión: Asegúrate de que tu API de Flask esté corriendo en ${API_BASE}.`;
             }
         }
 
-        // Manejador del formulario de Login
-        document.getElementById('form-login').addEventListener('submit', function(event) {
-            event.preventDefault(); // Evita el envío tradicional del formulario
-            
-            const userInput = document.getElementById('user-input').value.trim();
-            const messageEl = document.getElementById('login-message');
+        // --- MANEJADORES DE FORMULARIOS ---
 
-            if (userInput.length > 0) {
-                messageEl.textContent = 'Acceso concedido. Cargando perfil...';
-                messageEl.className = 'mt-4 text-sm font-medium text-success';
-                
-                // Simulación de una carga de perfil, luego cambiamos de página
-                setTimeout(() => {
-                    changePage('profile-page', userInput);
-                    messageEl.textContent = ''; // Limpiar mensaje después del cambio
-                }, 500); 
-                
-            } else {
-                messageEl.textContent = 'Por favor, introduce tu ID o nombre de usuario.';
-                messageEl.className = 'mt-4 text-sm font-medium text-red-500';
-            }
+        // 1. Registrar Usuario
+        document.getElementById('form-register-user').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const telegram_id = document.getElementById('reg-id').value;
+            const nombre = document.getElementById('reg-name').value;
+            
+            await callApi('registrar_usuario', 'POST', {
+                telegram_id: parseInt(telegram_id),
+                nombre: nombre
+            });
         });
 
-        // Inicializar la aplicación en la página de login al cargar
-        document.addEventListener('DOMContentLoaded', () => {
-            changePage('login-page');
+        // 2. Registrar Actividad
+        document.getElementById('form-register-activity').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const telegram_id = document.getElementById('act-id').value;
+            const tipo_actividad = document.getElementById('act-type').value;
+            const xp_a_sumar = document.getElementById('act-xp').value;
+
+            // Simple validación
+            if (!tipo_actividad) {
+                alert('Por favor, selecciona un tipo de actividad.');
+                return;
+            }
+            
+            await callApi('registrar_actividad', 'POST', {
+                telegram_id: parseInt(telegram_id),
+                tipo_actividad: tipo_actividad,
+                xp_a_sumar: parseInt(xp_a_sumar)
+            });
+        });
+
+        // 3. Obtener Ranking
+        document.getElementById('btn-get-ranking').addEventListener('click', async () => {
+            await callApi('ranking_semanal', 'GET');
         });
     </script>
+
 </body>
 </html>
