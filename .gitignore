@@ -1,2 +1,4 @@
 API_KEY.py
 parametros.py
+backend/database/
+__pycache__
